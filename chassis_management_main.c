@@ -40,7 +40,7 @@ struct sockaddr_in server_addr, client_addr;
 struct sockaddr_in dest_addr;
 pthread_t receive_tid, send_tid,serialRecvId,serialSendId;//定义线程ID
 /*****************************定义串口发送相关变量****************************/
-unsigned char tx_serial_buffer[11] = {0};//串口发送数据buffer
+unsigned char tx_serial_buffer[12] = {0};//串口发送数据buffer
 bool hasSentData = false; // 定义usart布尔变量用于记录usart是否已经发送过数据
 bool hasSendUdpData = false;//定义udp发送布尔变量用于记录udp是否已经发送过数据
 pthread_mutex_t serial_mutex = PTHREAD_MUTEX_INITIALIZER;//互斥锁（mutex）

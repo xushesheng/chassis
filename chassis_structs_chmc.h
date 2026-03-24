@@ -79,7 +79,7 @@ struct serialChassisRecv             /*定义从CHMC端接收的串口单板维�
   unsigned short frameHead;                         //帧头
   unsigned short frameCnt;                          //帧计数
   unsigned char  frameType;                         //报文类型 0x0E
-  unsigned char chmcSingleData[867];                //接收chmc数据 51*17
+  unsigned char chmcSingleData[833];                //接收chmc数据 49*17
   unsigned short backup1;                           //备份1
   unsigned short backup2;                           //备份2
   unsigned short frameSum;                          //累加和校验
@@ -100,7 +100,7 @@ struct serialHealthRecv             /*定义从chmc端接收的串口健康管�
   unsigned short frameHead;
   unsigned short frameCnt;
   unsigned char  frameType;
-  struct serialHealthManagement serialHealth[17];
+  struct serialHealthManagement serialHealth[17];   //17*6=102
   unsigned short backup1;                           //备份1
   unsigned short backup2;                           //备份2
   unsigned short frameSum;                          //累加和校验
