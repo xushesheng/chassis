@@ -131,30 +131,30 @@ int readDataFile(unsigned char data[], size_t dataSize) {
 void temperatureAndVoltageCompare(void){
     
     readDataFile(readBuffer,sizeof(readBuffer));//读取数据
-	memcpy(&back_threshold_data,readBuffer,sizeof(readBuffer));
+	memcpy(&receive_threshold_data,readBuffer,sizeof(readBuffer));
     for (int i = 0; i < 17; i++) // 实际温度值与设置阈值温度数据比较，形成温度警告阈值
     {
 	    printf("temperature %d \r\n",back_health_query.healthAttribute[i].temperature);
-        if ((int)(back_health_query.healthAttribute[i].temperature)  < back_threshold_data.temperatureLowerNR &&
-            (int)(back_health_query.healthAttribute[i].temperature) >= back_threshold_data.temperatureLowerCR)
+        if ((int)(back_health_query.healthAttribute[i].temperature)  < receive_threshold_data.temperatureLowerNR &&
+            (int)(back_health_query.healthAttribute[i].temperature) >= receive_threshold_data.temperatureLowerCR)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x00; // 轻微超下限
-        }else if ((int)(back_health_query.healthAttribute[i].temperature) < back_threshold_data.temperatureLowerCR &&
-                 (int)(back_health_query.healthAttribute[i].temperature) >= back_threshold_data.temperatureLowerNC)
+        }else if ((int)(back_health_query.healthAttribute[i].temperature) < receive_threshold_data.temperatureLowerCR &&
+                 (int)(back_health_query.healthAttribute[i].temperature) >= receive_threshold_data.temperatureLowerNC)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x01; // 较多超下限
-        }else if ((int)(back_health_query.healthAttribute[i].temperature) < back_threshold_data.temperatureLowerNC)
+        }else if ((int)(back_health_query.healthAttribute[i].temperature) < receive_threshold_data.temperatureLowerNC)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x02; // 严重超下限
-        }else if ((int)(back_health_query.healthAttribute[i].temperature) > back_threshold_data.temperatureUpperNR &&
-                (int)(back_health_query.healthAttribute[i].temperature) <= back_threshold_data.temperatureUpperCR)
+        }else if ((int)(back_health_query.healthAttribute[i].temperature) > receive_threshold_data.temperatureUpperNR &&
+                (int)(back_health_query.healthAttribute[i].temperature) <= receive_threshold_data.temperatureUpperCR)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x03; // 轻微超上限
-        }else if ((int)(back_health_query.healthAttribute[i].temperature) > back_threshold_data.temperatureUpperCR &&
-                 (int)(back_health_query.healthAttribute[i].temperature) < back_threshold_data.temperatureUpperNC)
+        }else if ((int)(back_health_query.healthAttribute[i].temperature) > receive_threshold_data.temperatureUpperCR &&
+                 (int)(back_health_query.healthAttribute[i].temperature) < receive_threshold_data.temperatureUpperNC)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x04; // 较多超上限
-        }else if ((int)(back_health_query.healthAttribute[i].temperature) >= back_threshold_data.temperatureUpperNC)
+        }else if ((int)(back_health_query.healthAttribute[i].temperature) >= receive_threshold_data.temperatureUpperNC)
         {
             back_health_query.healthAttribute[i].temperatureWarning = 0x05; // 严重超上限
         }else
@@ -165,10 +165,10 @@ void temperatureAndVoltageCompare(void){
 
     for (int k = 0; k < 17; k++) {// 实际电压值与设置阈值比较，形成电压阈值警告
         float voltage = back_health_query.healthAttribute[k].voltage / 10.0f;
-        if (voltage > back_threshold_data.voltageMax) {
+        if (voltage > receive_threshold_data.voltageMax) {
             back_health_query.healthAttribute[k].voltageWarning = 0x01; // 电压超上限
         }
-        else if (voltage < back_threshold_data.voltageMin) {
+        else if (voltage < receive_threshold_data.voltageMin) {
             back_health_query.healthAttribute[k].voltageWarning = 0x02; // 电压超下限
         }
         else {
@@ -189,6 +189,8 @@ void makeSendData(unsigned char makeclasses){
 		back_single_board.frameHead=0x0FF0;
 		back_single_board.frameCnt=singleQueryCnt;
 		back_single_board.frameType=0x03;
+		back_single_board.backup1=0x00;
+		back_single_board.backup2=0x00;
 		back_single_board.frameEnd=0xE00E;
 		singleQueryCnt++;
 		break;
@@ -217,7 +219,7 @@ void makeSendData(unsigned char makeclasses){
 	case 4: ////构建风扇管理回执帧
 	{
 		back_fan_state.frameHead=0x0FF0;
-		back_fan_state.frameType=0x89;
+		back_fan_state.frameType=0x90;
 		back_fan_state.frameCnt=fanQueryCnt;
 		back_fan_state.backup1=0x00;
 		back_fan_state.backup2=0x00;
@@ -231,6 +233,7 @@ void makeSendData(unsigned char makeclasses){
 		TxSerialData.frameCnt=txdataCnt;
 		TxSerialData.slot = querySlot;
 		TxSerialData.frameType = chassisQuery;
+		chassisQuery = 0;
 		TxSerialData.backup = 0x00;
 		TxSerialData.frameSum = CalcChecksum((unsigned char *)&TxSerialData, sizeof(serialChassisSend)-4);
 		TxSerialData.frameEnd = 0xE00E;
@@ -239,9 +242,9 @@ void makeSendData(unsigned char makeclasses){
 	}
 	case 6://构建健康管理阈值设置回执帧
 	{
-	    back_threshold_data.frameHead=0x0FF0;
-		back_threshold_data.frameCnt=healthSetCnt;
-		back_threshold_data.frameEnd=0xE00E;
+	    receive_threshold_data.frameHead=0x0FF0;
+		receive_threshold_data.frameCnt=healthSetCnt;
+		receive_threshold_data.frameEnd=0xE00E;
 		healthSetCnt++;
 		break;
 	}
@@ -249,8 +252,14 @@ void makeSendData(unsigned char makeclasses){
 	{
 		TxSerialThreshold.frameHead = 0x0FF0;
 		TxSerialThreshold.frameCnt = txThresholdCnt;
-		TxSerialThreshold.frameType = 0x82;
+		TxSerialThreshold.frameType = 0x02;
+		TxSerialThreshold.voltage1RefValue = 0x00;//电压1基准值
+		TxSerialThreshold.voltage2RefValue = 0x00;//电压2基准值
+		TxSerialThreshold.voltage3RefValue = 0x00;//电压3基准值
+		TxSerialThreshold.frameSum = CalcChecksum((unsigned char *)&TxSerialThreshold, sizeof(serialThresholdSend)-4);
 		TxSerialThreshold.frameEnd = 0xE00E;
+		txThresholdCnt++;
+		break;
 	}
 	case 8://串口发送单板信息数据组帧
 	{
@@ -258,6 +267,8 @@ void makeSendData(unsigned char makeclasses){
 		TxSerialSingleBoard.frameCnt = txSingleBoardCnt;
 		TxSerialSingleBoard.frameType = 0x83;
 		TxSerialSingleBoard.frameEnd = 0xE00E;
+		txSingleBoardCnt++;
+		break;
 	}
 	case 9://串口发送建链数据组帧
 	{
@@ -277,14 +288,14 @@ void makeSendData(unsigned char makeclasses){
 }
 /**********************************************************************************************************************************************************************
 * 函数名称：recvUdpSingleHealthFan
-* 功能描述：接收udp单板健康管理和风扇管理查询指令处理
+* 功能描述：接收udp单板信息、健康管理和风扇管理查询指令处理
 ***********************************************************************************************************************************************************************/
 void recvUdpSingleHealthFan(void){
-    if(receive_single_query.frameHead == 0xF00F && receive_single_query.frameEnd == 0x0EE0)
+    if(receive_query.frameHead == 0x0FF0 && receive_query.frameEnd == 0xE00E)
 	{
-		querySlot = receive_single_query.slot;//缓存查询槽位
-		chassisQuery = receive_single_query.frameType;//缓存查询指令
-		switch(receive_single_query.frameType)//查询指令和控制指令
+		querySlot = receive_query.slot;//缓存查询槽位
+		chassisQuery = receive_query.frameType;//缓存查询指令
+		switch(receive_query.frameType)//查询指令和控制指令
 		{
 		case 0xB0://返回IPMB-B使能
 		{
@@ -318,9 +329,9 @@ void recvUdpSingleHealthFan(void){
 		case 0xB5://阈值查询指令
 		{
 		    /*readDataFile(readBuffer,sizeof(readBuffer));//读取数据
-			memcpy(&back_threshold_data,readBuffer,sizeof(readBuffer));
+			memcpy(&receive_threshold_data,readBuffer,sizeof(readBuffer));
 			makeSendData(6);
-			sendto(sockfd,&back_threshold_data,sizeof(struct receiveHealthManagement),0,(struct sockaddr *)&dest_addr,sizeof(dest_addr));//返回阈值
+			sendto(sockfd,&receive_threshold_data,sizeof(struct receiveThreshold),0,(struct sockaddr *)&dest_addr,sizeof(dest_addr));//返回阈值
 		     */
             queryFlag = 4;
 			break;
@@ -379,17 +390,29 @@ void recvUdpSingleHealthFan(void){
 	}
 }
 /**********************************************************************************************************************************************************************
-* 函数名称：recvUdpHealth
-* 功能描述：接收udp健康管理指令数据处理
+* 函数名称：recvUdpThreshold
+* 功能描述：接收udp阈值设置指令数据处理
 ***********************************************************************************************************************************************************************/
-void recvUdpHealth(void){
-	if(receive_health_management.frameHead==0x0FF0 && receive_health_management.frameEnd==0xE00E && receive_health_management.frameType == 0x02)
+void recvUdpThreshold(void){
+	if(receive_threshold_data.frameHead==0x0FF0 && receive_threshold_data.frameEnd==0xE00E && receive_threshold_data.frameType == 0x02)
 	{	
-	    memcpy(writeBuffer,&receive_health_management,sizeof(struct receiveHealthManagement));//复制数据
+        TxSerialThreshold.temperatureLowerNR = (int16_t)(receive_threshold_data.temperatureLowerNR * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.temperatureLowerCR = (int16_t)(receive_threshold_data.temperatureLowerCR * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.temperatureLowerNC = (int16_t)(receive_threshold_data.temperatureLowerNC * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.temperatureUpperNR = (int16_t)(receive_threshold_data.temperatureUpperNR * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.temperatureUpperCR = (int16_t)(receive_threshold_data.temperatureUpperCR * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.temperatureUpperNC = (int16_t)(receive_threshold_data.temperatureUpperNC * 10);     	//更新接收到的最新阈值
+        TxSerialThreshold.voltage1MinThreshold = (int16_t)(receive_threshold_data.voltageMin * 100);			//更新接收到的最新阈值
+        TxSerialThreshold.voltage2MinThreshold = (int16_t)(receive_threshold_data.voltageMin * 100);			//更新接收到的最新阈值
+        TxSerialThreshold.voltage3MinThreshold = (int16_t)(receive_threshold_data.voltageMin * 100);			//更新接收到的最新阈值
+        TxSerialThreshold.voltage1MaxThreshold = (int16_t)(receive_threshold_data.voltageMax * 100);			//更新接收到的最新阈值
+        TxSerialThreshold.voltage2MaxThreshold = (int16_t)(receive_threshold_data.voltageMax * 100);			//更新接收到的最新阈值
+        TxSerialThreshold.voltage3MaxThreshold = (int16_t)(receive_threshold_data.voltageMax * 100);			//更新接收到的最新阈值
+	    memcpy(writeBuffer,&receive_threshold_data,sizeof(struct receiveThreshold));//复制数据到写入数组
 		writeDataToFile(writeBuffer,sizeof(writeBuffer));//写入数据	
 	}
 	else
 	{
-		memset(&receive_health_management,0,sizeof(struct receiveHealthManagement));//清零缓存
+		memset(&receive_threshold_data,0,sizeof(struct receiveThreshold));//清零缓存
 	}
 }

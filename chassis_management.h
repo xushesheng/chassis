@@ -36,18 +36,16 @@
 #define SERIAL_HEALTH_SIZE     202                                    //定义串口接收健康信息数据的最大长度
 #define SAVA_DATA_LENG_HEALTH  102                                    //定义存储健康管理数据最大长度
 #define SAVA_DATA_LENG_SINGLE  846                                    //定义存储单板信息数据的最大长度字节数
-#define SAVA_DATA_LENG_FAN     17                                      //定义存储风扇信息数据的最大长度字节数
+#define SAVA_DATA_LENG_FAN     15                                      //定义存储风扇信息数据的最大长度字节数
 #define TX_FIFO_LENG		 2048*4			                          //定义缓存发送语音数据FIFO的最大长度
 #define	RX_FIFO_LENG		 2048*4			                          //定义接收语音数据FIFO的最大长度
 
 /************** UDP通信结构体 ****************/
-extern struct receiveAndBackSingleBoardQuery receive_single_query;
+extern struct receiveQuery receive_query;
 extern struct backQueryorComman back_query;
 extern struct backSingleBoardQuery back_single_board;
-extern struct receiveHealthManagement receive_health_management;
-extern struct receiveHealthManagement back_threshold_data;
+extern struct receiveThreshold receive_threshold_data;
 extern struct backHealthQuery back_health_query;
-extern struct FanState receive_fan_query;
 extern struct BackFanState back_fan_state;
 
 /************** 串口通信结构体 ****************/
@@ -88,9 +86,11 @@ extern pthread_t send_tid;
 extern pthread_t serialRecvId;
 extern pthread_t serialSendId;
 /*****************************定义串口发送相关变量****************************/
-extern unsigned char tx_serial_buffer[11];
+extern unsigned char tx_serial_buffer[12];
 extern bool hasSentData;
 extern bool hasSendUdpData;
+extern bool thresholdSendPending;		//UDP 已收到阈值设置，等待串口发送。
+extern bool thresholdAckWaiting;		//阈值设置帧已发给 CHMC，等待 0x82 回执。
 extern pthread_mutex_t serial_mutex;
 /*****************************定义读写文件数据相关变量****************************/
 extern unsigned char writeBuffer[47];
@@ -107,5 +107,5 @@ void temperatureAndVoltageCompare(void);
 void makeSendData(unsigned char makeclasses);
 void recvUdpSingleHealthFan(void);
 void recvUdpHealth(void);
-
+void recvUdpThreshold(void);
 #endif
