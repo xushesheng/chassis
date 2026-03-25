@@ -235,7 +235,7 @@ void makeSendData(unsigned char makeclasses){
 		TxSerialData.frameType = chassisQuery;
 		chassisQuery = 0;
 		TxSerialData.backup = 0x00;
-		TxSerialData.frameSum = CalcChecksum((unsigned char *)&TxSerialData, sizeof(serialChassisSend)-4);
+		TxSerialData.frameSum = CalcChecksum((unsigned char *)&TxSerialData, sizeof(struct serialChassisSend)-4);
 		TxSerialData.frameEnd = 0xE00E;
 		txdataCnt++; 
 		break;
@@ -256,7 +256,7 @@ void makeSendData(unsigned char makeclasses){
 		TxSerialThreshold.voltage1RefValue = 0x00;//电压1基准值
 		TxSerialThreshold.voltage2RefValue = 0x00;//电压2基准值
 		TxSerialThreshold.voltage3RefValue = 0x00;//电压3基准值
-		TxSerialThreshold.frameSum = CalcChecksum((unsigned char *)&TxSerialThreshold, sizeof(serialThresholdSend)-4);
+		TxSerialThreshold.frameSum = CalcChecksum((unsigned char *)&TxSerialThreshold, sizeof(struct serialThresholdSend)-4);
 		TxSerialThreshold.frameEnd = 0xE00E;
 		txThresholdCnt++;
 		break;

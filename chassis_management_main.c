@@ -135,7 +135,7 @@ static void *udp_receive_thread(void *arg)
             hasSendUdpData = false;											//udp可以发送数据标识
 			memcpy(&receive_query, buffer, (size_t)rx_udp_cnt);				//复制数据到结构体缓存
 			recvUdpSingleHealthFan();										//处理指令
-        else if ((size_t)rx_udp_cnt == sizeof(struct receiveThreshold)) {	//如果接收到阈值设置指令
+        }else if ((size_t)rx_udp_cnt == sizeof(struct receiveThreshold)) {	//如果接收到阈值设置指令
             hasSentData = false;
             hasSendUdpData = false;
             if (thresholdAckWaiting) {
